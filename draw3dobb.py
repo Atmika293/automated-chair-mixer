@@ -3,6 +3,29 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy import linalg as LA
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.proj3d import proj_transform
+from matplotlib.text import Annotation
+from grassdata import Tree
+
+#https://datascience.stackexchange.com/questions/11430/how-to-annotate-labels-in-a-3d-matplotlib-scatter-plot
+class Annotation3D(Annotation):
+    '''Annotate the point xyz with text s'''
+
+    def __init__(self, s, xyz, *args, **kwargs):
+        Annotation.__init__(self,s, xy=(0,0), *args, **kwargs)
+        self._verts3d = xyz        
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        self.xy=(xs,ys)
+        Annotation.draw(self, renderer)
+
+def annotate3D(ax, s, *args, **kwargs):
+    '''add anotation text s to to Axes3d ax'''
+
+    tag = Annotation3D(s, *args, **kwargs)
+    ax.add_artist(tag)
 
 def tryPlot():
     cmap = plt.get_cmap('jet_r')
@@ -24,33 +47,7 @@ def tryPlot():
                -0.986967000000000,-0.160173000000000,0.0155341000000000,0.0146809000000000,0.00650174000000000,0.999801000000000], cmap(float(7)/7))
     plt.show()
 
-def draw(ax, p, color):
-    tmpPoint = p
-
-    center = tmpPoint[0: 3]
-    lengths = tmpPoint[3: 6]
-    dir_1 = tmpPoint[6: 9]
-    dir_2 = tmpPoint[9: ]
-
-    dir_1 = dir_1/LA.norm(dir_1)
-    dir_2 = dir_2/LA.norm(dir_2)
-    dir_3 = np.cross(dir_1, dir_2)
-    dir_3 = dir_3/LA.norm(dir_3)
-    cornerpoints = np.zeros([8, 3])
-
-    d1 = 0.5*lengths[0]*dir_1
-    d2 = 0.5*lengths[1]*dir_2
-    d3 = 0.5*lengths[2]*dir_3
-
-    cornerpoints[0][:] = center - d1 - d2 - d3
-    cornerpoints[1][:] = center - d1 + d2 - d3
-    cornerpoints[2][:] = center + d1 - d2 - d3
-    cornerpoints[3][:] = center + d1 + d2 - d3
-    cornerpoints[4][:] = center - d1 - d2 + d3
-    cornerpoints[5][:] = center - d1 + d2 + d3
-    cornerpoints[6][:] = center + d1 - d2 + d3
-    cornerpoints[7][:] = center + d1 + d2 + d3
-
+def draw(ax, cornerpoints, color):
     ax.plot([cornerpoints[0][0], cornerpoints[1][0]], [cornerpoints[0][1], cornerpoints[1][1]],
             [cornerpoints[0][2], cornerpoints[1][2]], c=color)
     ax.plot([cornerpoints[0][0], cornerpoints[2][0]], [cornerpoints[0][1], cornerpoints[2][1]],
@@ -88,8 +85,8 @@ def showGenshapes(genshapes):
         ax.set_zlim(-0.7, 0.7)
 
         for jj in range(len(recover_boxes)):
-            p = recover_boxes[jj][:]
-            draw(ax, p, cmap(float(jj)/len(recover_boxes)))
+            label, cornerpoints = recover_boxes[jj]
+            draw(ax, cornerpoints, cmap(float(jj)/len(recover_boxes)))
 
         plt.show()
 
@@ -104,7 +101,10 @@ def showGenshape(genshape):
     ax.set_zlim(-0.7, 0.7)
 
     for jj in range(len(recover_boxes)):
-        p = recover_boxes[jj][:].squeeze(0).numpy()
-        draw(ax, p, cmap(float(jj)/len(recover_boxes)))
+        label, cornerpoints = recover_boxes[jj]
+        annotate3D(ax, s=Tree.NodeLabel(label), xyz=cornerpoints.mean(axis=0), fontsize=10, xytext=(-3,3), textcoords='offset points', ha='center',va='center') 
+        draw(ax, cornerpoints, cmap(float(jj)/len(recover_boxes)))
+
+    
 
     plt.show()
