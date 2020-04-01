@@ -139,7 +139,7 @@ def decode_structure(root):
     return boxes
 
 if __name__ == "__main__":
-    grassdata = GRASSDataset('A:\\764dataset\\Chair',4)
+    grassdata = GRASSDataset('A:\\764dataset\\Chair',3)
     for i in range(len(grassdata)):
         tree = grassdata[i]
         boxes = decode_structure(tree.root)
