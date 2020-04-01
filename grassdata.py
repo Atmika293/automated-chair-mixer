@@ -4,6 +4,53 @@ from scipy.io import loadmat
 from enum import Enum
 import os
 
+#https://inareous.github.io/posts/opening-obj-using-py
+def parse_part_from_obj(filename, node_part_index):
+    f = open(filename)
+    line = f.readline()
+    part_geometry = None
+
+    while line:
+        if line[0:2] == "g ":
+            part_index = int(line[2:])
+            if part_index == node_part_index:
+                line = f.readline()
+
+                vertices = []
+                faces = []
+                
+                while line and line[0:2] != "g ":
+                    if line[:2] == "v ":
+                        index1 = line.find(" ") + 1
+                        index2 = line.find(" ", index1 + 1)
+                        index3 = line.find(" ", index2 + 1)
+                        vertex = (float(line[index1:index2]), float(line[index2:index3]), float(line[index3:-1]))
+                        vertices.append(vertex)
+
+                    elif line[:2] == "f ":
+                        index1 = line.find(" ") + 1
+                        index2 = line.find(" ", index1 + 1)
+                        index3 = line.find(" ", index2 + 1)
+                        face = (int(line[index1:index2])-1, int(line[index2:index3])-1, int(line[index3:-1])-1)
+                        faces.append(face)
+
+                    line = f.readline()
+                part_geometry = (vertices, faces)
+                break
+            else:
+                line = f.readline()
+
+        else:
+            line = f.readline()
+    f.close()
+
+    if part_geometry is None:
+        print("Failed to find part geometry")
+
+    return part_geometry
+
+    
+
 class Tree(object):
     class NodeType(Enum):
         BOX = 0  # box node
@@ -17,7 +64,7 @@ class Tree(object):
         ARMREST = 3
 
     class Node(object):
-        def __init__(self, box=None, left=None, right=None, node_type=None, sym=None, label=None, part_indices=None, mesh_file=None):
+        def __init__(self, box=None, left=None, right=None, node_type=None, sym=None, label=None, part_indices=None, mesh_file=None, part_index=-1):
             self.box = box          # box feature vector for a leaf node
             self.sym = sym          # symmetry parameter vector for a symmetry node
             self.left = left        # left child for ADJ or SYM (a symmeter generator)
@@ -26,6 +73,10 @@ class Tree(object):
             self.label = label
             self.part_indices=part_indices
             self.mesh_file = mesh_file
+            self.part_geometry = None
+            self.part_index = part_index
+            if self.is_leaf():
+                self.part_geometry = parse_part_from_obj(mesh_file, part_index)
 
         def is_leaf(self):
             return self.node_type == Tree.NodeType.BOX and self.box is not None
@@ -51,7 +102,8 @@ class Tree(object):
                     node_type=Tree.NodeType.BOX,
                     label=Tree.NodeLabel(label_list.pop().item()),
                     mesh_file=mesh_path,
-                    part_indices=part_mesh_obj_indices[leaf_index]))
+                    part_indices=part_mesh_obj_indices[leaf_index],
+                    part_index=leaf_index))
                 leaf_index+=1
             elif ops[0, id] == Tree.NodeType.ADJ.value:
                 left_node = queue.pop()
@@ -63,6 +115,7 @@ class Tree(object):
         assert len(queue) == 1
         self.root = queue[0]
 
+    
 
 class GRASSDataset(data.Dataset,):
     def __init__(self, dir, models_num=0, transform=None):
@@ -78,8 +131,8 @@ class GRASSDataset(data.Dataset,):
             part_mesh = loadmat(os.path.join(dir, 'part mesh indices', '%d.mat' % (i+1)))
             part_mesh_obj_indices = part_mesh['cell_boxs_correspond_objSerialNumber'][0]
             mesh_name = str(part_mesh['shapename'][0])
-            mesh_path = os.path.join(dir, 'models', '%s.obj', mesh_name)
-            tree = Tree(boxes, ops, syms, labels, mesh_name, part_mesh_obj_indices)
+            mesh_path = os.path.join(dir, 'models', '%s.obj' % mesh_name)
+            tree = Tree(boxes, ops, syms, labels, mesh_path, part_mesh_obj_indices)
             self.trees.append(tree)
 
     def __getitem__(self, index):
