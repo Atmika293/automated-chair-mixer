@@ -49,8 +49,6 @@ def parse_part_from_obj(filename, node_part_index):
 
     return part_geometry
 
-    
-
 class Tree(object):
     class NodeType(Enum):
         BOX = 0  # box node

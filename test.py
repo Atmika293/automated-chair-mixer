@@ -6,6 +6,7 @@ import torch
 from grassdata import GRASSDataset
 import math
 from numpy import linalg
+from utils import write_to_obj
 
 def vrrotvec2mat(rotvector):
     s = math.sin(rotvector[3])
@@ -138,9 +139,30 @@ def decode_structure(root):
 
     return boxes
 
+
+def get_geo_tree(root):
+    stack = [root]
+    geo = []
+    while len(stack) > 0:
+        node = stack.pop()
+
+        node_type = torch.LongTensor([node.node_type.value]).item()
+        if node_type == 1:  # ADJ
+            stack.append(node.left)
+            stack.append(node.right)
+        if node_type == 2:  # SYM
+            stack.append(node.left)
+        if node_type == 0:  # BOX
+            geo.append(node.part_geometry)
+
+    return geo
+
 if __name__ == "__main__":
     grassdata = GRASSDataset('A:\\764dataset\\Chair',3)
     for i in range(len(grassdata)):
         tree = grassdata[i]
         boxes = decode_structure(tree.root)
         showGenshape(boxes)
+
+        geometry = get_geo_tree(tree.root)
+        write_to_obj("test.obj", geometry[0][0], geometry[0][1])
