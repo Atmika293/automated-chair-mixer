@@ -3,6 +3,7 @@ from torch.utils import data
 from scipy.io import loadmat
 from enum import Enum
 import os
+import numpy as np
 
 #https://inareous.github.io/posts/opening-obj-using-py
 def parse_part_from_obj(filename, node_part_index):
@@ -92,6 +93,7 @@ class Tree(object):
         box_list.reverse()
         sym_param.reverse()
         label_list.reverse()
+        part_mesh_obj_indices = np.flip(part_mesh_obj_indices, axis=0)
         queue = []
         leaf_index = 0
         for id in range(ops.size()[1]):

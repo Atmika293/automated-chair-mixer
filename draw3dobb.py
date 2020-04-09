@@ -88,3 +88,21 @@ def showGenshape(genshape):
         annotate3D(ax, s=Tree.NodeLabel(label), xyz=cornerpoints.mean(axis=0), fontsize=10, xytext=(-3,3), textcoords='offset points', ha='center',va='center') 
         draw(ax, cornerpoints, cmap(float(jj)/len(recover_boxes)))
     plt.show()
+
+def show_obbs_from_parts(parts):
+    fig = plt.figure(0)
+    cmap = plt.get_cmap('jet_r')
+    ax = Axes3D(fig)
+    ax.set_xlim(-0.7, 0.7)
+    ax.set_ylim(-0.7, 0.7)
+    ax.set_zlim(-0.7, 0.7)
+    n_boxes = len(parts)
+    i = 0
+    for part in parts:
+        label = part.label
+        cornerpoints = part.bounding_box
+        annotate3D(ax, s=label, xyz=cornerpoints.mean(axis=0), fontsize=10, xytext=(-3,3), textcoords='offset points', ha='center',va='center') 
+        draw(ax, cornerpoints, cmap(float(i)/n_boxes))
+        i+=1
+    plt.show()
+
