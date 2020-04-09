@@ -6,7 +6,7 @@ import torch
 from grassdata import GRASSDataset
 import math
 from numpy import linalg
-from utils import write_to_obj
+from utils import write_to_obj, reindex_faces
 
 def vrrotvec2mat(rotvector):
     s = math.sin(rotvector[3])
@@ -143,26 +143,92 @@ def decode_structure(root):
 def get_geo_tree(root):
     stack = [root]
     geo = []
+    syms = [torch.ones(8).mul(10)]
     while len(stack) > 0:
         node = stack.pop()
-
         node_type = torch.LongTensor([node.node_type.value]).item()
         if node_type == 1:  # ADJ
             stack.append(node.left)
             stack.append(node.right)
+            s = syms.pop()
+            syms.append(s)
+            syms.append(s)
         if node_type == 2:  # SYM
             stack.append(node.left)
+            syms.pop()
+            syms.append(node.sym.squeeze(0))
         if node_type == 0:  # BOX
-            geo.append(node.part_geometry)
+            geo.append((node.part_geometry[0], reindex_faces(node.part_geometry[0], node.part_geometry[1])))
+            reBox = node.box
+            label = node.label
+            s = syms.pop()
+            l1 = abs(s[0] + 1)
+            l2 = abs(s[0])
+            l3 = abs(s[0] - 1)
+
+            sList = torch.split(s, 1, 0)
+            bList = torch.split(reBox.data.squeeze(0), 1, 0)
+            vertices = node.part_geometry[0]
+            faces = node.part_geometry[1]   # figure out how to reindex the faces
+            
+            if l1 < 0.15:   #rotation symmetry
+                f1 = torch.cat([sList[1], sList[2], sList[3]])
+                f1 = f1/torch.norm(f1)
+                f2 = torch.cat([sList[4], sList[5], sList[6]])
+                folds = round(1/s[7].item())
+                for i in range(folds-1):
+                    rotvector = torch.cat([f1, sList[7].mul(2*3.1415).mul(i+1)])
+                    rotm = vrrotvec2mat(rotvector)
+                    new_vertices = rotm.matmul(torch.FloatTensor(vertices).add(-f2)).add(f2).tolist()
+                    #reindex faces here
+                    geo.append((new_vertices, reindex_faces(new_vertices, faces)))
+
+            if l3 < 0.15: # translation
+                trans = torch.cat([sList[1], sList[2], sList[3]])
+                trans_end = torch.cat([sList[4], sList[5], sList[6]])
+                center = torch.cat([bList[0], bList[1], bList[2]])
+                trans_length = math.sqrt(torch.sum(trans**2))
+                trans_total = math.sqrt(torch.sum(trans_end.add(-center)**2))
+                folds = round(trans_total/trans_length)
+                for i in range(folds):
+                    center = torch.cat([bList[0], bList[1], bList[2]])
+                    new_center = center.add(trans.mul(i+1))
+                    pt_vertices = torch.FloatTensor(vertices)
+                    new_vertices = pt_vertices.add(center - new_center).tolist()
+                    geo.append((new_vertices, reindex_faces(new_vertices, faces)))
+
+            if l2 < 0.15: # mirror?
+                ref_normal = torch.cat([sList[1], sList[2], sList[3]])
+                ref_normal = ref_normal/torch.norm(ref_normal)
+                ref_point = torch.cat([sList[4], sList[5], sList[6]])
+                center = torch.cat([bList[0], bList[1], bList[2]])
+                
+                if ref_normal.matmul(ref_point.add(-center)) < 0:
+                    ref_normal = -ref_normal
+                pt_vertices = torch.FloatTensor(vertices)
+                new_center = ref_normal.mul(2*abs(torch.sum(ref_point.add(-center).mul(ref_normal)))).add(center)
+                new_vertices = pt_vertices.add(center - new_center).tolist()
+                geo.append((new_vertices, reindex_faces(new_vertices, faces)))
+
+
 
     return geo
 
 if __name__ == "__main__":
-    grassdata = GRASSDataset('A:\\764dataset\\Chair',3)
+    grassdata = GRASSDataset('A:\\764dataset\\Chair',9)
     for i in range(len(grassdata)):
         tree = grassdata[i]
         boxes = decode_structure(tree.root)
-        showGenshape(boxes)
+        #showGenshape(boxes)
 
         geometry = get_geo_tree(tree.root)
-        write_to_obj("test.obj", geometry[0][0], geometry[0][1])
+        vertices = []
+        faces = []
+        offsets = []
+        for geo_pair in geometry:
+            current_face_count = len(vertices)
+            offsets.extend([current_face_count] * len(geo_pair[1]))
+            vertices.extend(geo_pair[0])
+            faces.extend(geo_pair[1])
+
+        write_to_obj("test.obj", vertices, faces, offsets)

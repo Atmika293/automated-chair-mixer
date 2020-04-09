@@ -73,23 +73,6 @@ def draw(ax, cornerpoints, color):
     ax.plot([cornerpoints[3][0], cornerpoints[7][0]], [cornerpoints[3][1], cornerpoints[7][1]],
             [cornerpoints[3][2], cornerpoints[7][2]], c=color)
 
-def showGenshapes(genshapes):
-    for i in range(len(genshapes)):
-        recover_boxes = genshapes[i]
-
-        fig = plt.figure(i)
-        cmap = plt.get_cmap('jet_r')
-        ax = Axes3D(fig)
-        ax.set_xlim(-0.7, 0.7)
-        ax.set_ylim(-0.7, 0.7)
-        ax.set_zlim(-0.7, 0.7)
-
-        for jj in range(len(recover_boxes)):
-            label, cornerpoints = recover_boxes[jj]
-            draw(ax, cornerpoints, cmap(float(jj)/len(recover_boxes)))
-
-        plt.show()
-
 def showGenshape(genshape):
     recover_boxes = genshape
 
@@ -104,7 +87,4 @@ def showGenshape(genshape):
         label, cornerpoints = recover_boxes[jj]
         annotate3D(ax, s=Tree.NodeLabel(label), xyz=cornerpoints.mean(axis=0), fontsize=10, xytext=(-3,3), textcoords='offset points', ha='center',va='center') 
         draw(ax, cornerpoints, cmap(float(jj)/len(recover_boxes)))
-
-    
-
     plt.show()
