@@ -178,6 +178,30 @@ def export_parts_to_obj(filename, parts):
 
     write_to_obj(filename, vertices, faces, offsets)
 
+def raycast_triangles(ray_origin, ray_dir, vertices, faces, normals):
+
+    for i in range(0, len(faces)):
+        face = faces[i]
+        v0 = vertices[face[0]]
+        v1 = vertices[face[1]]
+        v2 = vertices[face[2]]
+        pvec = normals[i]
+        v0v1 = v1 - v0
+        v0v2 = v2 - v0
+        det = np.dot(v0v1, pvec)
+        if det < -0.001: continue
+        inv_det = 1 / det
+        tvec = ray_origin - v0
+        u = np.dot(tvec, pvec) * inv_det
+        if u < 0 or u > 1: continue
+        qvec = np.cross(tvec, v0v1)
+        v = np.dot(ray_dir, qvec) * inv_det
+        if v < 0 or u + v > 1: continue
+
+        return np.dot(v0v2, qvec) * inv_det
+
+    return 1.0
+
 # TODO: implement renderer like Wallace specified, using depth only with raytracing
 def render_obj(filename, vertices, faces, angles, width):
 
@@ -213,17 +237,15 @@ def render_obj(filename, vertices, faces, angles, width):
         image = np.zeros((width, width))
         for y in range(0, width):
             for x in range(0, width):
-                ray_start = upper_left - tangent * ((radius * x + 0.5) / width) - binormal * ((radius * y + 0.5) / width)
+                ray_origin = upper_left - tangent * ((radius * x + 0.5) / width) - binormal * ((radius * y + 0.5) / width)
                 ray_dir = -n_view_vector
-                # cast ray on object and obtain distance to ray_start
-                image[y,x] = 0.5 
+                image[y,x] = raycast_triangles(ray_origin, ray_dir, np_verts, faces, np_f_normals)
         
         im = Image.fromarray((255 *image).astype(np.uint8))
         
         img_name = filename + "_" + str(img_count) + ".png"
         im.save(img_name)
         img_count += 1
-    # get size of image and cast rays onto the triangles for each point
-    # save image_suffix.png
+
     return
 

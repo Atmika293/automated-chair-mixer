@@ -101,5 +101,3 @@ if __name__ == "__main__":
         export_parts_to_obj("test2.obj", mesh.parts)
 
         # the bounding boxes should actually match each part properly too
-        
-        render_obj("test_render", mesh.parts[0].vertices, mesh.parts[0].faces, [(0,0)], 256)
