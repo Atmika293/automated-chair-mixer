@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import linalg
+from PIL import Image
 
 #https://inareous.github.io/posts/opening-obj-using-py
 def parse_part_from_obj_2(filename):
@@ -59,14 +60,6 @@ def write_to_obj(filename, vertices, faces, face_offsets=None):
         
 
     f.close()
-
-# TODO: implement renderer like Wallace specified, using depth only with raytracing
-def render_obj(filename, vertices, faces, angles, width, height):
-    #compute bounding sphere
-    #foreach angle compute position on bounding sphere, get normal vector and build plane parallel to sphere
-    # get size of image and cast rays onto the triangles for each point
-    # save image_suffix.png
-    return None
 
 def reindex_faces(vertices, faces):
     offset = 99999999999999
@@ -185,5 +178,52 @@ def export_parts_to_obj(filename, parts):
 
     write_to_obj(filename, vertices, faces, offsets)
 
+# TODO: implement renderer like Wallace specified, using depth only with raytracing
+def render_obj(filename, vertices, faces, angles, width):
 
+    np_verts = np.array(vertices)
+    np_f_normals = np.zeros((len(faces), 3))
+
+    for i in range(0, len(faces)):
+        face = faces[i]
+        v1 = np_verts[face[1]] - np_verts[face[0]]
+        v2 = np_verts[face[2]] - np_verts[face[1]]
+        v3 = np.cross(v1, v2)
+        np_f_normals[i] = v3 / np.sqrt(np.sum(v3**2))
+
+    #compute bounding sphere
+    center = np.mean(np_verts, axis=0)
+    c_to_p = np_verts - center
+    distances = np.sqrt(np.sum(c_to_p**2, axis=1))
+    radius = np.max(distances, axis=0) * 1.5
+    
+    #foreach angle compute position on bounding sphere, get normal vector and build plane parallel to sphere
+    img_count = 0
+    for angle in angles:
+        (theta, phi) = angle # inclination, azimuth
+        # this also serves as the normal to the view plane
+        view_vector = radius * np.array([np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)])
+        n_view_vector = view_vector / np.sqrt(np.sum(view_vector**2))
+        # tangent to the sphere and inside the plane
+        tangent = np.array([np.cos(phi - np.pi), np.sin(phi - np.pi), 0])
+        tangent /= np.sqrt(np.sum(tangent**2))
+        binormal = np.cross(n_view_vector, tangent)
+        binormal /= np.sqrt(np.sum(binormal**2))
+        upper_left = center + view_vector + (0.5 * radius) * tangent + (0.5 * radius) * binormal
+        image = np.zeros((width, width))
+        for y in range(0, width):
+            for x in range(0, width):
+                ray_start = upper_left - tangent * ((radius * x + 0.5) / width) - binormal * ((radius * y + 0.5) / width)
+                ray_dir = -n_view_vector
+                # cast ray on object and obtain distance to ray_start
+                image[y,x] = 0.5 
+        
+        im = Image.fromarray((255 *image).astype(np.uint8))
+        
+        img_name = filename + "_" + str(img_count) + ".png"
+        im.save(img_name)
+        img_count += 1
+    # get size of image and cast rays onto the triangles for each point
+    # save image_suffix.png
+    return
 

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch.utils import data
 from scipy.io import loadmat
-from utils import parse_obb_file, parse_part_from_obj_2, reindex_faces, export_parts_to_obj
+from utils import parse_obb_file, parse_part_from_obj_2, reindex_faces, export_parts_to_obj, render_obj
 from draw3dobb import show_obbs_from_parts
 
 class PartLabel(Enum):
@@ -92,7 +92,7 @@ if __name__ == "__main__":
             print(part)
         
         #display bounding boxes
-        show_obbs_from_parts(mesh.parts)
+        #show_obbs_from_parts(mesh.parts)
 
         #shows how to get the parts associated with a label
         export_parts_to_obj("test.obj", mesh.get_parts_from_label(PartLabel.LEG))
@@ -101,3 +101,5 @@ if __name__ == "__main__":
         export_parts_to_obj("test2.obj", mesh.parts)
 
         # the bounding boxes should actually match each part properly too
+        
+        render_obj("test_render", mesh.parts[0].vertices, mesh.parts[0].faces, [(0,0)], 256)
