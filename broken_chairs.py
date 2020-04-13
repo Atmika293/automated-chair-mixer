@@ -1,12 +1,20 @@
 from grassdata_new import GRASSNewDataset
 from utils import export_parts_to_obj
-from grassdata_new import PartLabel
+from grassdata_new import PartLabel, Mesh, Part
 import numpy as np
+import os
 
 if __name__ == '__main__':
-    dataset = GRASSNewDataset('A:\\764dataset\\Chair',1)
-    for i in range(len(dataset)):
-        mesh = dataset[i]
+    dir = 'A:\\764dataset\\Chair'
+    obb_path = os.path.join(dir, 'obbs')
+    obj_path = os.path.join(dir, 'models')
+    files = os.listdir(obb_path)
+    file_count = len(files)
+    model_count = 6201
+    for i in range(0, model_count):
+        file = os.path.join(obb_path, files[i])
+        obj = os.path.join(obj_path, files[i][:-3] + "obj")
+        mesh = Mesh(file, obj)
 
         new_parts = []
 
@@ -50,3 +58,5 @@ if __name__ == '__main__':
         filename = "A:\\764dataset\\Chair\\models_bad\\" + filename
 
         export_parts_to_obj(filename, new_parts)
+
+        del mesh

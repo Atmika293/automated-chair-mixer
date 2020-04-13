@@ -11,14 +11,11 @@ render = bpy.context.scene.render
 for obj_fname in obj_root.glob('*.obj'):
     bpy.ops.import_scene.obj(filepath=str(obj_fname))
 
-    for i in range(0, 5):
-        for ob in bpy.context.selected_objects:
-            if i == 4:
-                ob.rotation_euler = ( pi /2 , 0, 0)
-            else:
-                ob.rotation_euler = ( 0 , i * 3.14159 / 2, 0)
-        render.filepath = 'A:/764dataset/Chair/renders_ortho/%s_%d' % (obj_fname.stem, i)
-        bpy.ops.render.render(write_still=True)
+    for ob in bpy.context.selected_objects:
+        ob.rotation_euler = ( pi /2 , 0, 0)
+
+    render.filepath = 'A:/764dataset/Chair/renders/%s_6' % (obj_fname.stem)
+    bpy.ops.render.render(write_still=True)
 
     meshes_to_remove = []
     for ob in bpy.context.selected_objects:
