@@ -82,7 +82,7 @@ class GRASSNewDataset(data.Dataset,):
         return len(self.meshes)
 
 if __name__ == "__main__":
-    dataset = GRASSNewDataset('A:\\764dataset\\Chair',2)
+    dataset = GRASSNewDataset('A:\\764dataset\\Chair',1)
     for i in range(len(dataset)):
         mesh = dataset[i]
 
