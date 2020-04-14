@@ -8,3 +8,4 @@ __pycache__/aggregator.cpython-37.pyc
 __pycache__/extractor.cpython-37.pyc
 __pycache__/mixer.cpython-37.pyc
 __pycache__/warp_mesh.cpython-37.pyc
+warped_meshes_render/
