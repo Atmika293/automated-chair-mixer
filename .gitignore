@@ -3,3 +3,8 @@ __pycache__/draw3dobb.cpython-37.pyc
 __pycache__/grassdata.cpython-37.pyc
 __pycache__/utils.cpython-37.pyc
 __pycache__/grassdata_new.cpython-37.pyc
+.vscode/settings.json
+__pycache__/aggregator.cpython-37.pyc
+__pycache__/extractor.cpython-37.pyc
+__pycache__/mixer.cpython-37.pyc
+__pycache__/warp_mesh.cpython-37.pyc
