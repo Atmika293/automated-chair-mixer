@@ -7,6 +7,8 @@ from mpl_toolkits.mplot3d.proj3d import proj_transform
 from matplotlib.text import Annotation
 from grassdata import Tree
 
+import open3d as o3d
+
 #https://datascience.stackexchange.com/questions/11430/how-to-annotate-labels-in-a-3d-matplotlib-scatter-plot
 class Annotation3D(Annotation):
     '''Annotate the point xyz with text s'''
@@ -106,3 +108,65 @@ def show_obbs_from_parts(parts):
         i+=1
     plt.show()
 
+def show_obbs_from_bboxes(labels, bboxes):
+    fig = plt.figure(0)
+    cmap = plt.get_cmap('jet_r')
+    ax = Axes3D(fig)
+    ax.set_xlim(-0.7, 0.7)
+    ax.set_ylim(-0.7, 0.7)
+    ax.set_zlim(-0.7, 0.7)
+    n_boxes = len(labels)
+    i = 0
+    for label, bbox in zip(labels, bboxes):
+        annotate3D(ax, s=label, xyz=bbox.mean(axis=0), fontsize=10, xytext=(-3,3), textcoords='offset points', ha='center',va='center') 
+        draw(ax, bbox, cmap(float(i)/n_boxes))
+        i+=1
+    plt.show()
+
+def showGenshape(genshape):
+    recover_boxes = genshape
+
+    fig = plt.figure(0)
+    cmap = plt.get_cmap('jet_r')
+    ax = Axes3D(fig)
+    ax.set_xlim(-0.7, 0.7)
+    ax.set_ylim(-0.7, 0.7)
+    ax.set_zlim(-0.7, 0.7)
+
+    for jj in range(len(recover_boxes)):
+        label, cornerpoints = recover_boxes[jj]
+        annotate3D(ax, s=Tree.NodeLabel(label), xyz=cornerpoints.mean(axis=0), fontsize=10, xytext=(-3,3), textcoords='offset points', ha='center',va='center') 
+        draw(ax, cornerpoints, cmap(float(jj)/len(recover_boxes)))
+
+    plt.show()
+
+def reindex_faces(part_faces, new_offset):
+    part_faces_np = np.asarray(part_faces, dtype=np.int32)
+    part_faces_np = part_faces_np - np.amin(part_faces_np) + new_offset
+
+    return part_faces_np
+
+def renderMeshFromParts(parts):
+    vertex_list = []
+    faces_list = []
+    current_offset = 0
+    for part in parts:
+        if part.render:
+            vertex_list.append(np.asarray(part.vertices, dtype=np.float64))
+            faces_list.append(reindex_faces(part.faces, current_offset))
+            current_offset += len(part.vertices)
+
+    mesh = o3d.geometry.TriangleMesh()
+    mesh.vertices = o3d.utility.Vector3dVector(np.concatenate(vertex_list, axis=0))
+    mesh.triangles = o3d.utility.Vector3iVector(np.concatenate(faces_list, axis=0))
+
+    mesh.compute_vertex_normals()
+
+    o3d.visualization.draw_geometries([mesh])
+
+    # pcd = o3d.geometry.PointCloud()
+    # pcd.points = o3d.utility.Vector3dVector(np.concatenate(vertex_list, axis=0))
+
+    # # pcd.estimate_normals()
+
+    # o3d.visualization.draw_geometries([pcd])

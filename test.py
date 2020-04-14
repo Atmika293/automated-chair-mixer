@@ -1,12 +1,17 @@
 # original code from https://github.com/PeppaZhu/grass
 
 import numpy as np
-from draw3dobb import showGenshape
+from draw3dobb import showGenshape, renderMeshFromParts, show_obbs_from_bboxes
 import torch
 from grassdata import GRASSDataset
 import math
 from numpy import linalg
 from utils import write_to_obj, reindex_faces
+
+from grassdata_new import Part, Mesh, PartLabel, GRASSNewDataset
+from aggregator import Aggregator
+from mixer import Mixer
+from extractor import RandomizedExtractor
 
 def vrrotvec2mat(rotvector):
     s = math.sin(rotvector[3])
@@ -214,21 +219,106 @@ def get_geo_tree(root):
 
     return geo
 
+# def adjust_bbox(orig_target_bbox, adj_bbox):
+#     overlap = [np.maximum(orig_target_bbox[0], adj_bbox[0]), np.minimum(orig_target_bbox[1], adj_bbox[1])]
+#     difference = overlap[1] - overlap[0]
+#     print(difference)
+
+#     target_bbox = [None]* 2
+#     target_bbox[0] = np.where(difference > 0, overlap[0], orig_target_bbox[0])
+#     target_bbox[1] = np.where(difference > 0, overlap[1], orig_target_bbox[1])
+
+#     target_bbox[0][1] = orig_target_bbox[0][1]
+#     target_bbox[1][1] = orig_target_bbox[1][1]
+
+#     target_corners = np.zeros([8, 3])
+#     target_corners[0, :] = target_bbox[0]
+#     target_corners[1, :] = np.array([target_bbox[0][0], target_bbox[0][1], target_bbox[1][2]])
+#     target_corners[2, :] = np.array([target_bbox[0][0], target_bbox[1][1], target_bbox[0][2]])
+#     target_corners[3, :] = np.array([target_bbox[0][0], target_bbox[1][1], target_bbox[1][2]])
+#     target_corners[4, :] = np.array([target_bbox[1][0], target_bbox[0][1], target_bbox[0][2]])
+#     target_corners[5, :] = np.array([target_bbox[1][0], target_bbox[0][1], target_bbox[1][2]])
+#     target_corners[6, :] = np.array([target_bbox[1][0], target_bbox[1][1], target_bbox[0][2]])
+#     target_corners[7, :] = target_bbox[1]
+
+#     return target_bbox, target_corners
+
 if __name__ == "__main__":
-    grassdata = GRASSDataset('A:\\764dataset\\Chair',9)
-    for i in range(len(grassdata)):
-        tree = grassdata[i]
-        boxes = decode_structure(tree.root)
-        #showGenshape(boxes)
+    # dataset = GRASSNewDataset('D:\\CMPT 764\\chairs_dataset',3)
+    agg = Aggregator()
+    mixer = Mixer('D:\\CMPT 764\\chairs_dataset', 10)
+    # extractor = RandomizedExtractor(dataset)
 
-        geometry = get_geo_tree(tree.root)
-        vertices = []
-        faces = []
-        offsets = []
-        for geo_pair in geometry:
-            current_face_count = len(vertices)
-            offsets.extend([current_face_count] * len(geo_pair[1]))
-            vertices.extend(geo_pair[0])
-            faces.extend(geo_pair[1])
+    for i in range(3):
+        mixer.reset_target()
+        mixer.mix_parts()
+        renderMeshFromParts(mixer.get_target_mesh().parts)
+    # for i in range(len(mixer.dataset)):
+    #     # mesh = mixer.dataset[i]
 
-        write_to_obj("test.obj", vertices, faces, offsets)
+    #     # extractor.target = mesh
+
+    #     #display info about mesh and parts
+    #     # print(mesh)
+    #     # for part in mesh.parts:
+    #     #     print(part)
+
+    #     # parts = agg.get_all_parts_by_label(mesh, PartLabel.LEG)
+
+    #     # renderMeshFromParts(parts)
+
+    #     boxes = []
+    #     labels = []
+    #     # for label in PartLabel:
+    #     #     _, bbox = agg.get_super_bounding_box(mesh, label)
+    #     #     if bbox is not None:
+    #     #         boxes.append(bbox)
+    #     #         labels.append(label)
+
+    #     bboxes_dict = mixer.extractor.get_target_labels_with_bounding_box()
+    #     print(bboxes_dict)
+
+    #     for label in bboxes_dict:
+    #         if label == PartLabel.BACK or label == PartLabel.LEG:
+    #             leg_bbox = [bboxes_dict[label][1][0, :], bboxes_dict[label][1][-1, :]] ## min coords, max coords
+    #             seat_bbox = [bboxes_dict[PartLabel.SEAT][1][0, :], bboxes_dict[PartLabel.SEAT][1][-1, :]] ## min coords, max coords
+
+    #             target_bbox, target_corners = mixer.adjust_bbox(leg_bbox, seat_bbox)
+
+    #             boxes.append(target_corners)
+    #         else:
+    #             boxes.append(bboxes_dict[label][1])
+
+    #         labels.append(label)
+
+    #     if len(boxes) > 0:
+    #         show_obbs_from_bboxes(labels, boxes)
+
+        
+        # #display bounding boxes
+        # show_obbs_from_parts(mesh.parts)
+
+        # #shows how to get the parts associated with a label
+        # export_parts_to_obj("test.obj", mesh.get_parts_from_label(PartLabel.LEG))
+
+        # #can also export all parts
+        # export_parts_to_obj("test2.obj", mesh.parts)
+
+        # the bounding boxes should actually match each part properly too
+    # grassdata = GRASSDataset('A:\\764dataset\\Chair',9)
+    # for i in range(len(grassdata)):
+    #     tree = grassdata[i]
+    #     boxes = decode_structure(tree.root)
+    #     #showGenshape(boxes)
+
+    #     geometry = get_geo_tree(tree.root)
+    #     vertices = []
+    #     faces = []
+    #     offsets = []
+    #     for geo_pair in geometry:
+    #         current_face_count = len(vertices)
+    #         offsets.extend([current_face_count] * len(geo_pair[1]))
+    #         vertices.extend(geo_pair[0])
+    #         faces.extend(geo_pair[1])
+
+    #     write_to_obj("test.obj", vertices, faces, offsets)

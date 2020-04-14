@@ -22,6 +22,7 @@ class Part(object):
         self.label = label
         self.connectivity = []
         self.bounding_box = bounding_box
+        self.render = True
 
     def __str__(self):
         return 'Part of type {} has {} connections,v: {} f: {}'.format(self.label, len(self.connectivity), len(self.vertices), len(self.faces))
@@ -61,15 +62,21 @@ class Mesh(object):
   
 class GRASSNewDataset(data.Dataset,):
     """Dataset of PartNet meshes with symmetry"""
-    def __init__(self, dir:str, models_num:int):
+    def __init__(self, dir:str, models_num:int=-1, model_list=None):
         self.dir = dir
         self.meshes = []
         obb_path = os.path.join(dir, 'obbs')
         obj_path = os.path.join(dir, 'models')
         files = os.listdir(obb_path)
         file_count = len(files)
-        model_count = min(models_num, file_count)
-        for i in range(0, model_count):
+
+        if model_list is None:
+            if models_num < 0:
+                model_list = range(file_count)
+            else:
+                model_list = range(min(models_num, file_count))
+
+        for i in model_list:
             file = os.path.join(obb_path, files[i])
             obj = os.path.join(obj_path, files[i][:-3] + "obj")
             self.meshes.append(Mesh(file, obj))
@@ -80,24 +87,3 @@ class GRASSNewDataset(data.Dataset,):
 
     def __len__(self):
         return len(self.meshes)
-
-if __name__ == "__main__":
-    dataset = GRASSNewDataset('A:\\764dataset\\Chair',1)
-    for i in range(len(dataset)):
-        mesh = dataset[i]
-
-        #display info about mesh and parts
-        print(mesh)
-        for part in mesh.parts:
-            print(part)
-        
-        #display bounding boxes
-        #show_obbs_from_parts(mesh.parts)
-
-        #shows how to get the parts associated with a label
-        export_parts_to_obj("test.obj", mesh.get_parts_from_label(PartLabel.LEG))
-
-        #can also export all parts
-        export_parts_to_obj("test2.obj", mesh.parts)
-
-        # the bounding boxes should actually match each part properly too

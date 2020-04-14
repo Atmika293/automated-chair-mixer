@@ -2,6 +2,14 @@ import numpy as np
 from numpy import linalg
 from PIL import Image
 
+def restore_vertex_order(sorted_vertices, sorted_order):
+    unsorted_vertices = np.zeros_like(sorted_vertices)
+
+    for i in range(sorted_order.shape[0]):
+        unsorted_vertices[sorted_order[i], :] = sorted_vertices[i, :]\
+
+    return unsorted_vertices
+
 #https://inareous.github.io/posts/opening-obj-using-py
 def parse_part_from_obj_2(filename):
     f = open(filename)
@@ -20,14 +28,14 @@ def parse_part_from_obj_2(filename):
                     index1 = line.find(" ") + 1
                     index2 = line.find(" ", index1 + 1)
                     index3 = line.find(" ", index2 + 1)
-                    vertex = (float(line[index1:index2]), float(line[index2:index3]), float(line[index3:-1]))
+                    vertex = [float(line[index1:index2]), float(line[index2:index3]), float(line[index3:-1])]
                     vertices.append(vertex)
 
                 elif line[:2] == "f ":
                     index1 = line.find(" ") + 1
                     index2 = line.find(" ", index1 + 1)
                     index3 = line.find(" ", index2 + 1)
-                    face = (int(line[index1:index2])-1, int(line[index2:index3])-1, int(line[index3:-1])-1)
+                    face = [int(line[index1:index2])-1, int(line[index2:index3])-1, int(line[index3:-1])-1]
                     faces.append(face)
 
                 line = f.readline()
@@ -72,7 +80,7 @@ def reindex_faces(vertices, faces):
 
     new_faces = []
     for face in faces:
-        new_faces.append((face[0] - offset, face[1] - offset, face[2] - offset))
+        new_faces.append([face[0] - offset, face[1] - offset, face[2] - offset])
     return new_faces
 
 def get_box_corners(points):
