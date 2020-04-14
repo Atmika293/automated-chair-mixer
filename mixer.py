@@ -3,8 +3,12 @@ from extractor import RandomizedExtractor
 
 import numpy as np
 import random
+import copy
+import open3d as o3d
 
 from utils import restore_vertex_order
+from warp_mesh import apply_transform_on_mesh
+from warp_mesh import get_mesh_from_part, warp_part, mesh_to_part
 
 class Mixer(object):
 	def __init__(self, dataset_path, model_num):
@@ -68,7 +72,7 @@ class Mixer(object):
 			else:
 				target_vertices = target_part_vertices[:candidate_size, :]
 
-			# print(target_vertices.shape)
+			#print(target_vertices.shape)
 			
 			for p in range(target_vertices.shape[0]):
 				point = target_vertices[p, :]
@@ -160,13 +164,32 @@ class Mixer(object):
 				continue
 			
 			source_bbox = [bbox[0, :], bbox[-1, :]]
-
-			##warp if number of parts with the same label is equal
-			# if len(parts) == target_bboxes_dict[label][0]:
-
-			##else replace using bbox
+            
+			#'''
+			# Warp if number of parts with the same label is equal
+			if len(parts) == target_bboxes_dict[label][0]:
+				target_parts = self.extractor.get_target_parts_by_label(label)
+				for s, t in zip(parts, target_parts):
+					idx = parts.index(s)
+					s = get_mesh_from_part(s)
+					t = get_mesh_from_part(t)
+					tf_param, source, target = warp_part(s, t)
+					result = copy.deepcopy(s)
+					result = apply_transform_on_mesh(result, tf_param)
+					
+					result = mesh_to_part(result, label, bbox)
+					parts[idx] = result
+					print("Warped a part!")
+					
+					#o3d.visualization.draw_geometries([source, target, result])
+					# Example on how to use move _part: 
+                    # result = move_part(result, seat, axis=1, n=5000)
+                    
+                
+			# Else replace using bbox
 			# else:
 			## readjusting bbox to adjacent part
+			#'''
 
 			## if label == LEG or label == BACK, adjust to SEAT
 			if label == PartLabel.LEG or label == PartLabel.BACK:
@@ -181,12 +204,7 @@ class Mixer(object):
 				if random.random() > 0.5: ##delete armrests
 					self.extractor.make_target_parts_invisible_by_label(label)
 				else:
-					orig_target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]] ## min coords, max coords
-					seat_bbox = [target_bboxes_dict[PartLabel.SEAT][1][0, :], target_bboxes_dict[PartLabel.SEAT][1][-1, :]] ## min coords, max coords
-					target_bbox, target_corners = self.__adjust_bbox(orig_target_bbox, seat_bbox)
-					target_bboxes_dict[label][1] = target_corners
-
-					self.replace_part(parts, source_bbox, target_bbox, label)	
+					self.replace_part(parts, source_bbox, [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]], label)	
 
 			else:
 				target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]]

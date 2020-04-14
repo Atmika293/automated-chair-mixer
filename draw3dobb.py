@@ -146,6 +146,84 @@ def reindex_faces(part_faces, new_offset):
 
     return part_faces_np
 
+
+def renderMesh(part_meshes):
+    vertices = []
+    faces = []
+    current_min_idx = 0
+    # for part_vertices, part_faces, min_vertex_idx, max_vertex_idx in part_meshes:
+    #     vertices.append(np.asarray(part_vertices, dtype=np.float64))
+    #     faces.append(modify_faces(part_faces, min_vertex_idx, current_min_idx))
+    #     current_min_idx += len(part_vertices)
+
+    for part_mesh in part_meshes:
+        part_vertices = part_mesh[0]
+        part_faces = part_mesh[1]
+        min_vertex_idx = part_mesh[2]
+        max_vertex_idx = part_mesh[3]
+
+        v_points = np.asarray(part_vertices, dtype=np.float64)
+        vertices.append(v_points)
+
+        part_faces_np = modify_faces(part_faces, min_vertex_idx, current_min_idx)
+        faces.append(part_faces_np)
+        current_min_idx += len(part_vertices)
+
+        if len(part_mesh) > 4:
+            symm_op = part_mesh[4]
+            # print(symm_op)
+
+            if symm_op == 'rotate':
+                op_matrices = part_mesh[5]
+                rot_center = part_mesh[6]
+                 
+                v_points_t = v_points.T - rot_center
+
+                for rot_mat in op_matrices:
+                    v_points_rot = np.matmul(rot_mat, v_points_t) + rot_center
+                    vertices.append(v_points_rot.T)
+
+                    part_faces_np = modify_faces(part_faces, min_vertex_idx, current_min_idx)
+                    faces.append(part_faces_np)
+                    current_min_idx += len(part_vertices)
+
+            elif symm_op == 'translate':
+                op_vectors = part_mesh[5]
+
+                for trans_vec in op_vectors:
+                    v_points_trans = v_points.T + trans_vec
+                    vertices.append(v_points_trans.T)
+
+                    part_faces_np = modify_faces(part_faces, min_vertex_idx, current_min_idx)
+                    faces.append(part_faces_np)
+                    current_min_idx += len(part_vertices)
+
+            elif symm_op == 'reflect':
+                ref_normal = part_mesh[5]
+                ref_point = part_mesh[6]
+
+                v_points_t = ref_point - v_points.T
+                v_points_reflect = (ref_normal * (2 * np.absolute(np.repeat(np.sum(v_points_t * ref_normal, axis=0, keepdims=True), ref_normal.shape[0], axis=0)))) + v_points.T
+                vertices.append(v_points_reflect.T)
+
+                part_faces_np = modify_faces(part_faces, min_vertex_idx, current_min_idx)
+                faces.append(part_faces_np)
+                current_min_idx += len(part_vertices)
+
+    if len(vertices) > 0 and len(faces) > 0:
+        vertices_np = np.concatenate(vertices, axis=0)
+        faces_np = np.concatenate(faces, axis=0)
+
+        mesh = o3d.geometry.TriangleMesh()
+        mesh.vertices = o3d.utility.Vector3dVector(vertices_np)
+        mesh.triangles = o3d.utility.Vector3iVector(faces_np)
+
+        mesh.compute_vertex_normals()
+
+        o3d.visualization.draw_geometries([mesh])
+
+        print('Done')
+
 def renderMeshFromParts(parts):
     vertex_list = []
     faces_list = []
@@ -163,10 +241,3 @@ def renderMeshFromParts(parts):
     mesh.compute_vertex_normals()
 
     o3d.visualization.draw_geometries([mesh])
-
-    # pcd = o3d.geometry.PointCloud()
-    # pcd.points = o3d.utility.Vector3dVector(np.concatenate(vertex_list, axis=0))
-
-    # # pcd.estimate_normals()
-
-    # o3d.visualization.draw_geometries([pcd])

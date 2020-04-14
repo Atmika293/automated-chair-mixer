@@ -246,13 +246,15 @@ def get_geo_tree(root):
 if __name__ == "__main__":
     # dataset = GRASSNewDataset('D:\\CMPT 764\\chairs_dataset',3)
     agg = Aggregator()
-    mixer = Mixer('D:\\CMPT 764\\chairs_dataset', 10)
+    mixer = Mixer('Chair', 5)
     # extractor = RandomizedExtractor(dataset)
 
-    for i in range(3):
+    for i in range(5):
         mixer.reset_target()
         mixer.mix_parts()
         renderMeshFromParts(mixer.get_target_mesh().parts)
+        
+        
     # for i in range(len(mixer.dataset)):
     #     # mesh = mixer.dataset[i]
 
