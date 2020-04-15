@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import linalg
 from PIL import Image
+import open3d as o3d
 
 def restore_vertex_order(sorted_vertices, sorted_order):
     unsorted_vertices = np.zeros_like(sorted_vertices)
@@ -257,3 +258,22 @@ def render_obj(filename, vertices, faces, angles, width):
 
     return
 
+
+
+def render_ply(ply_name):
+
+    pcd = o3d.io.read_point_cloud(ply_name)
+    mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd)
+    mesh = mesh.simplify_quadric_decimation(30000)
+    o3d.io.write_triangle_mesh(ply_name[:-3]+"obj", mesh)
+"""
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+    vis.add_geometry(mesh)
+    vis.run()
+    vis.capture_screen_image(render_name, do_render=True)
+
+    vis.destroy_window()"""
+
+if __name__ == "__main__":
+    render_ply("A:\\764dataset\\geomproject\\182.ply")
