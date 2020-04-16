@@ -10,7 +10,7 @@ import time
 from grassdata_new import Part, PartLabel
 from draw3dobb import reindex_faces
 
-def renderMeshFromParts_new(parts):
+def renderMeshFromParts_new(parts, i):
     vertex_list = []
     seat = None
     pcd = o3d.geometry.PointCloud()
@@ -54,7 +54,7 @@ def renderMeshFromParts_new(parts):
             pcd = o3d.geometry.PointCloud()
         
 
-    o3d.io.write_point_cloud("final.ply", full)
+    o3d.io.write_point_cloud("final"+str(i)+".ply", full)
     o3d.visualization.draw_geometries([full])
 
 

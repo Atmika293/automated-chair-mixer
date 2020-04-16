@@ -254,11 +254,11 @@ if __name__ == "__main__":
     
     # extractor = RandomizedExtractor(dataset)
 
-    for i in range(5):
+    for i in range(1):
         mixer.reset_target()
         mixer.show_data_meshes()
         mixer.mix_parts()
-        renderMeshFromParts_new(mixer.get_target_mesh().parts)
+        renderMeshFromParts_new(mixer.get_target_mesh().parts, i)
         
         
     # for i in range(len(mixer.dataset)):
