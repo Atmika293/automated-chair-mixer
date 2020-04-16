@@ -202,7 +202,7 @@ class Mixer(object):
 					pcd = convert_to_pcd(m)
                     
 					#o3d.io.write_point_cloud("part"+str(i)+".pcd", pcd)
-					o3d.visualization.draw_geometries([pcd], 'TARGET PART')
+					#o3d.visualization.draw_geometries([pcd], 'TARGET PART')
 					print(i)
 					i = i+1
                     
@@ -229,7 +229,7 @@ class Mixer(object):
 					result = warp_part(s, t)
                     
 					#o3d.io.write_point_cloud("part"+str(i)+".pcd", result)
-					o3d.visualization.draw_geometries([result], 'WARPED PART')
+					#o3d.visualization.draw_geometries([result], 'WARPED PART')
 					print(i)
 					i = i+1
 					
@@ -268,7 +268,7 @@ class Mixer(object):
 					pcd = convert_to_pcd(m)
                     
 					#o3d.io.write_point_cloud("part"+str(i)+".pcd", pcd)
-					o3d.visualization.draw_geometries([pcd], 'REPLACED PART')
+					#o3d.visualization.draw_geometries([pcd], 'REPLACED PART')
 					print(i)
 					i = i+1
                     
@@ -307,13 +307,13 @@ class Mixer(object):
 	def reset_target(self):
 		self.extractor.reset_target(self.dataset)
         
-	def show_data_meshes(self, run=9999):
+	def show_data_meshes(self):
         # To see all the source meshes
         # And the target in red
 		#print(self.extractor.target.colour)
 		meshes = self.extractor.get_source_meshes()
-		print(len(meshes))
-		renderMeshFromParts(self.extractor.target.parts, 'target'+str(run)+'.png')
+		#print(len(meshes))
+		renderMeshFromParts(self.extractor.target.parts, 'source.png')
 		
 		for i in range (len(meshes)):
-			renderMeshFromParts(meshes[i].parts, 'source'+str(run)+'_'+str(i)+'.png')
+			renderMeshFromParts(meshes[i].parts, 'source'+str(i)+'.png')

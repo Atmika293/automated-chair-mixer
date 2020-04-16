@@ -258,14 +258,15 @@ if __name__ == "__main__":
     #mixer.show_data_meshes()
     
     # extractor = RandomizedExtractor(dataset)
-
-    for i in range(10):
+    mixer.show_data_meshes()
+   
+    for i in range(1):
         mixer.reset_target()
-        mixer.show_data_meshes(i)
+        
         mixer.mix_parts()
         renderMeshFromParts_new(mixer.get_target_mesh().parts, i)
-        
-        
+    
+    
     # for i in range(len(mixer.dataset)):
     #     # mesh = mixer.dataset[i]
 
