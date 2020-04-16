@@ -7,15 +7,14 @@ import copy
 import open3d as o3d
 
 from utils import restore_vertex_order
-from warp_mesh import apply_transform_on_mesh
-from warp_mesh import get_mesh_from_part, warp_part, mesh_to_part
+from warp import warp_part, get_mesh_from_part, pcd_to_part, convert_to_pcd
 
 class Mixer(object):
-	def __init__(self, dataset_path, model_num):
-		self.dataset = GRASSNewDataset(dataset_path, max(2, model_num))
+	def __init__(self, dataset_path, model_num, model_list=None):
+		self.dataset = GRASSNewDataset(dataset_path, max(2, model_num), model_list)
 		self.extractor = RandomizedExtractor(self.dataset)
 
-	def __adjust_bbox(self, orig_target_bbox, adj_bbox, shift_factor=0.5):
+	def __adjust_bbox(self, orig_target_bbox, adj_bbox, shift_factor=0.0):
 		overlap = [np.maximum(orig_target_bbox[0], adj_bbox[0]), np.minimum(orig_target_bbox[1], adj_bbox[1])]
 		difference = overlap[1] - overlap[0]
 
@@ -101,7 +100,34 @@ class Mixer(object):
 
 		return target_parts
 
-	def replace_part(self, source_parts, source_bbox, target_bbox, label):
+	def resize_parts(self, warped_parts, orig_target_bbox, mod_target_bbox, label):
+		source_center = (orig_target_bbox[0] + orig_target_bbox[1]) / 2
+		target_center = (mod_target_bbox[0] + mod_target_bbox[1]) / 2
+
+		trans1_matrix = np.eye(4, dtype=np.float64)
+		trans1_matrix[:3, -1] = -source_center
+
+		resize_matrix = np.eye(4, dtype=np.float64)
+		resize_factor = np.absolute((mod_target_bbox[1] - mod_target_bbox[0]) / (orig_target_bbox[1] - orig_target_bbox[0]))
+		resize_matrix[:3, :3] = np.diag(resize_factor)
+
+		trans2_matrix = np.eye(4, dtype=np.float64)
+		trans2_matrix[:3, -1] = target_center
+
+		transform_matrix = np.matmul(trans2_matrix, np.matmul(resize_matrix, trans1_matrix))
+
+		for part in warped_parts:
+			points = np.asarray(part.vertices, dtype=np.float64)
+			homogeneous_points = np.ones([4, points.shape[0]])
+			homogeneous_points[:3, :] = points.T
+			homogeneous_points = np.matmul(transform_matrix, homogeneous_points)
+			homogeneous_points = homogeneous_points / homogeneous_points[-1, :]
+			homogeneous_points = homogeneous_points.T
+			part.vertices = homogeneous_points[:, :3].tolist()
+
+		self.extractor.replace_target_parts_by_label(label, warped_parts)	
+
+	def replace_parts(self, source_parts, source_bbox, target_bbox, label):
 		source_center = (source_bbox[0] + source_bbox[1]) / 2
 		target_center = (target_bbox[0] + target_bbox[1]) / 2
 
@@ -157,6 +183,7 @@ class Mixer(object):
 	def mix_parts(self):
 		target_bboxes_dict = self.extractor.get_target_labels_with_bounding_box()
 
+		i = 0
 		for label in target_bboxes_dict:
 		# label = PartLabel.BACK
 			parts, bbox = self.extractor.find_source_part(self.dataset, label)
@@ -169,46 +196,71 @@ class Mixer(object):
 			# Warp if number of parts with the same label is equal
 			if len(parts) == target_bboxes_dict[label][0]:
 				target_parts = self.extractor.get_target_parts_by_label(label)
-				for s, t in zip(parts, target_parts):
+				for s, t, bb in zip(parts, target_parts, bbox):
 					idx = parts.index(s)
 					s = get_mesh_from_part(s)
 					t = get_mesh_from_part(t)
-					tf_param, source, target = warp_part(s, t)
-					result = copy.deepcopy(s)
-					result = apply_transform_on_mesh(result, tf_param)
+					result = warp_part(s, t)
+                    
+					# o3d.io.write_point_cloud("part"+str(i)+".pcd", result)
+					# print(i)
+					# i = i+1
 					
-					result = mesh_to_part(result, label, bbox)
-					parts[idx] = result
+					result = pcd_to_part(result, label, bb) #bbox
+					target_parts[idx] = result
 					print("Warped a part!")
 					
 					#o3d.visualization.draw_geometries([source, target, result])
 					# Example on how to use move _part: 
                     # result = move_part(result, seat, axis=1, n=5000)
-                    
                 
-			# Else replace using bbox
-			# else:
+                # self.extractor.replace_target_parts_by_label(label, target_parts)
+                if label == PartLabel.LEG or label == PartLabel.BACK or label == PartLabel.ARMREST:
+					orig_target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]] ## min coords, max coords
+					seat_bbox = [target_bboxes_dict[PartLabel.SEAT][1][0, :], target_bboxes_dict[PartLabel.SEAT][1][-1, :]] ## min coords, max coords
+					mod_target_bbox, target_corners = self.__adjust_bbox(orig_target_bbox, seat_bbox)
+					target_bboxes_dict[label][1] = target_corners
+					
+					self.resize_parts(target_parts, orig_target_bbox, mod_target_bbox, label)	
+
+				else:
+					self.extractor.replace_target_parts_by_label(label, target_parts)
+                
+			# Else replace using bbox, but convert part to mesh to pcd part
+			else:
+				# for part, bb in zip(parts, bbox):
+				# 	idx = parts.index(part)
+				# 	m = get_mesh_from_part(part)
+				# 	pcd = convert_to_pcd(m)
+                    
+				# 	o3d.io.write_point_cloud("part"+str(i)+".pcd", pcd)
+				# 	print(i)
+				# 	i = i+1
+                    
+				# 	result = pcd_to_part(pcd, label, bb)
+				# 	parts[idx] = result
+				# 	print("Replaced a part!")
 			## readjusting bbox to adjacent part
 			#'''
 
-			## if label == LEG or label == BACK, adjust to SEAT
-			if label == PartLabel.LEG or label == PartLabel.BACK:
-				orig_target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]] ## min coords, max coords
-				seat_bbox = [target_bboxes_dict[PartLabel.SEAT][1][0, :], target_bboxes_dict[PartLabel.SEAT][1][-1, :]] ## min coords, max coords
-				target_bbox, target_corners = self.__adjust_bbox(orig_target_bbox, seat_bbox)
-				target_bboxes_dict[label][1] = target_corners
-				
-				self.replace_part(parts, source_bbox, target_bbox, label)
+				## if label == LEG or label == BACK, adjust to SEAT
+				if label == PartLabel.LEG or label == PartLabel.BACK:
+					orig_target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]] ## min coords, max coords
+					seat_bbox = [target_bboxes_dict[PartLabel.SEAT][1][0, :], target_bboxes_dict[PartLabel.SEAT][1][-1, :]] ## min coords, max coords
+					target_bbox, target_corners = self.__adjust_bbox(orig_target_bbox, seat_bbox)
+					target_bboxes_dict[label][1] = target_corners
+					
+					self.replace_parts(parts, source_bbox, target_bbox, label)
 
-			elif label == PartLabel.ARMREST:
-				if random.random() > 0.5: ##delete armrests
-					self.extractor.make_target_parts_invisible_by_label(label)
+				elif label == PartLabel.ARMREST:
+					if random.random() > 0.5: ##delete armrests
+						self.extractor.make_target_parts_invisible_by_label(label)
+					else:
+						self.replace_parts(parts, source_bbox, [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]], label)	
+
 				else:
-					self.replace_part(parts, source_bbox, [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]], label)	
-
-			else:
-				target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]]
-				self.replace_part(parts, source_bbox, target_bbox, label)
+					target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]]
+					self.replace_parts(parts, source_bbox, target_bbox, label)
 
 			self.join_parts()
 

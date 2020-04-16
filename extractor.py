@@ -65,6 +65,17 @@ class RandomizedExtractor(object):
 
 		self.target.parts.extend(parts)
 
+	def replace_target_parts_by_label(self, label, parts):
+		assert(self.target is not None)
+
+		target_parts = []
+		for part in self.target.parts:
+			if part.label != label:
+				target_parts.append(part)
+
+		target_parts.extend(parts)
+		self.target.parts = target_parts
+
 	def find_source_part(self, dataset, label, iter_limit=10):
 		bbox = None
 		idx = self.target_index

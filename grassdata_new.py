@@ -72,13 +72,16 @@ class GRASSNewDataset(data.Dataset,):
 
         if model_list is None:
             if models_num < 0:
-                model_list = range(file_count)
+                model_list = [files[i] for i in range(file_count)]
             else:
-                model_list = range(min(models_num, file_count))
+                model_list = [files[i] for i in range(min(models_num, file_count))]
+        else:
+            model_list = [str(mn) + '.obb' for mn in model_list]
 
-        for i in model_list:
-            file = os.path.join(obb_path, files[i])
-            obj = os.path.join(obj_path, files[i][:-3] + "obj")
+
+        for filename in model_list:
+            file = os.path.join(obb_path, filename)
+            obj = os.path.join(obj_path, filename[:-3] + "obj")
             self.meshes.append(Mesh(file, obj))
 
     def __getitem__(self, index):
