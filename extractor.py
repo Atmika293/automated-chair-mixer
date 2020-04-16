@@ -12,8 +12,11 @@ from utils import reindex_faces
 class RandomizedExtractor(object):
 	def __init__(self, dataset):
 		self.aggregator = Aggregator()
+		self.dataset = dataset
 		self.target_index, target = self.__choose_random_sample(dataset)
 		self.target = copy.deepcopy(target)
+		self.target.set_mesh_and_parts_colour([1, 0, 0])
+		self.set_colour_coded_sources(dataset) ############# ADD TO RESET TARGET?? ##############
 
 	def __choose_random_sample(self, dataset):
 		data_size = len(dataset)
@@ -29,6 +32,7 @@ class RandomizedExtractor(object):
 			self.target_index, target = self.__choose_random_sample(dataset)
 			
 		self.target = copy.deepcopy(target)
+		self.set_colour_coded_sources(self.dataset) 
 
 	def get_target_labels_with_bounding_box(self):
 		assert(self.target is not None)
@@ -120,6 +124,34 @@ class RandomizedExtractor(object):
 
 		return parts
 
+
+	def set_colour_coded_sources(self, dataset):
+		data_size = len(dataset)
+		cols = [[0.2, 0.2, 0.6],[0.2, 0.7, 0.3],[1, 0.7, 0.2],[0.5, 0.1, 0.5]]
+		# List of colours
+		# 1: Dark Blue, 2: Green, 3: Yellow, 4: Purple
+		i=0
+
+		for idx in range (data_size):
+			if idx == self.target_index: # For target
+				self.target.set_mesh_and_parts_colour([1,0,0])
+				print("Setting colour for target with colour red at idx ", idx)
+				continue
+			mesh = dataset[idx]
+			print("Setting colour for ", idx, " with colour number ", i)
+			mesh.set_mesh_and_parts_colour(cols[i])
+			i = i + 1
+
+	def get_source_meshes(self):
+		data_size = len(self.dataset)
+		meshes = []
+		i=0
+
+		for idx in range (data_size):
+			if idx == self.target_index:
+				continue
+			meshes.append(self.dataset[idx])
+		return meshes
 
 
 

@@ -1,7 +1,5 @@
 import numpy as np
 from numpy import linalg
-from PIL import Image
-import open3d as o3d
 
 def restore_vertex_order(sorted_vertices, sorted_order):
     unsorted_vertices = np.zeros_like(sorted_vertices)
@@ -69,6 +67,14 @@ def write_to_obj(filename, vertices, faces, face_offsets=None):
         
 
     f.close()
+
+# TODO: implement renderer like Wallace specified, using depth only with raytracing
+def render_obj(filename, vertices, faces, angles, width, height):
+    #compute bounding sphere
+    #foreach angle compute position on bounding sphere, get normal vector and build plane parallel to sphere
+    # get size of image and cast rays onto the triangles for each point
+    # save image_suffix.png
+    return None
 
 def reindex_faces(vertices, faces):
     offset = 99999999999999
@@ -187,93 +193,5 @@ def export_parts_to_obj(filename, parts):
 
     write_to_obj(filename, vertices, faces, offsets)
 
-def raycast_triangles(ray_origin, ray_dir, vertices, faces, normals):
-
-    for i in range(0, len(faces)):
-        face = faces[i]
-        v0 = vertices[face[0]]
-        v1 = vertices[face[1]]
-        v2 = vertices[face[2]]
-        pvec = normals[i]
-        v0v1 = v1 - v0
-        v0v2 = v2 - v0
-        det = np.dot(v0v1, pvec)
-        if det < -0.001: continue
-        inv_det = 1 / det
-        tvec = ray_origin - v0
-        u = np.dot(tvec, pvec) * inv_det
-        if u < 0 or u > 1: continue
-        qvec = np.cross(tvec, v0v1)
-        v = np.dot(ray_dir, qvec) * inv_det
-        if v < 0 or u + v > 1: continue
-
-        return np.dot(v0v2, qvec) * inv_det
-
-    return 1.0
-
-# TODO: implement renderer like Wallace specified, using depth only with raytracing
-def render_obj(filename, vertices, faces, angles, width):
-
-    np_verts = np.array(vertices)
-    np_f_normals = np.zeros((len(faces), 3))
-
-    for i in range(0, len(faces)):
-        face = faces[i]
-        v1 = np_verts[face[1]] - np_verts[face[0]]
-        v2 = np_verts[face[2]] - np_verts[face[1]]
-        v3 = np.cross(v1, v2)
-        np_f_normals[i] = v3 / np.sqrt(np.sum(v3**2))
-
-    #compute bounding sphere
-    center = np.mean(np_verts, axis=0)
-    c_to_p = np_verts - center
-    distances = np.sqrt(np.sum(c_to_p**2, axis=1))
-    radius = np.max(distances, axis=0) * 1.5
-    
-    #foreach angle compute position on bounding sphere, get normal vector and build plane parallel to sphere
-    img_count = 0
-    for angle in angles:
-        (theta, phi) = angle # inclination, azimuth
-        # this also serves as the normal to the view plane
-        view_vector = radius * np.array([np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)])
-        n_view_vector = view_vector / np.sqrt(np.sum(view_vector**2))
-        # tangent to the sphere and inside the plane
-        tangent = np.array([np.cos(phi - np.pi), np.sin(phi - np.pi), 0])
-        tangent /= np.sqrt(np.sum(tangent**2))
-        binormal = np.cross(n_view_vector, tangent)
-        binormal /= np.sqrt(np.sum(binormal**2))
-        upper_left = center + view_vector + (0.5 * radius) * tangent + (0.5 * radius) * binormal
-        image = np.zeros((width, width))
-        for y in range(0, width):
-            for x in range(0, width):
-                ray_origin = upper_left - tangent * ((radius * x + 0.5) / width) - binormal * ((radius * y + 0.5) / width)
-                ray_dir = -n_view_vector
-                image[y,x] = raycast_triangles(ray_origin, ray_dir, np_verts, faces, np_f_normals)
-        
-        im = Image.fromarray((255 *image).astype(np.uint8))
-        
-        img_name = filename + "_" + str(img_count) + ".png"
-        im.save(img_name)
-        img_count += 1
-
-    return
 
 
-
-def render_ply(ply_name):
-
-    pcd = o3d.io.read_point_cloud(ply_name)
-    mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd)
-    mesh = mesh.simplify_quadric_decimation(30000)
-    o3d.io.write_triangle_mesh(ply_name[:-3]+"obj", mesh)
-"""
-    vis = o3d.visualization.Visualizer()
-    vis.create_window()
-    vis.add_geometry(mesh)
-    vis.run()
-    vis.capture_screen_image(render_name, do_render=True)
-
-    vis.destroy_window()"""
-
-if __name__ == "__main__":
-    render_ply("A:\\764dataset\\geomproject\\182.ply")

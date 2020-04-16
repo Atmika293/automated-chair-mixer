@@ -224,6 +224,8 @@ def renderMesh(part_meshes):
 
         print('Done')
 
+# Change made here
+'''
 def renderMeshFromParts(parts):
     vertex_list = []
     faces_list = []
@@ -231,13 +233,55 @@ def renderMeshFromParts(parts):
     for part in parts:
         if part.render:
             vertex_list.append(np.asarray(part.vertices, dtype=np.float64))
-            faces_list.append(reindex_faces(part.faces, current_offset))
+            if part.faces!=None:
+                faces_list.append(reindex_faces(part.faces, current_offset))
             current_offset += len(part.vertices)
+    
+    if part.faces!=None:
+        mesh = o3d.geometry.TriangleMesh()
+        mesh.vertices = o3d.utility.Vector3dVector(np.concatenate(vertex_list, axis=0))
+        mesh.triangles = o3d.utility.Vector3iVector(np.concatenate(faces_list, axis=0))
+        mesh.compute_vertex_normals()
+    else:
+        mesh = o3d.geometry.PointCloud()
+        mesh.points = o3d.utility.Vector3dVector(np.concatenate(np.asarray(vertex_list), axis=0))
+        mesh.estimate_normals()
 
-    mesh = o3d.geometry.TriangleMesh()
-    mesh.vertices = o3d.utility.Vector3dVector(np.concatenate(vertex_list, axis=0))
-    mesh.triangles = o3d.utility.Vector3iVector(np.concatenate(faces_list, axis=0))
-
-    mesh.compute_vertex_normals()
-
+    #o3d.io.write_point_cloud("final.pcd", mesh)
     o3d.visualization.draw_geometries([mesh])
+'''
+def renderMeshFromParts(parts):
+    vertex_list = []
+    faces_list = []
+    current_offset = 0
+    if parts[0].faces!=None:
+        mesh = o3d.geometry.TriangleMesh()
+        full = o3d.geometry.TriangleMesh()
+    else:
+        pcd = o3d.geometry.PointCloud()
+        full = o3d.geometry.PointCloud()
+        
+    for part in parts:
+        if part.render:
+            if part.faces!=None:
+                vertex_list = (np.asarray(part.vertices, dtype=np.float64))
+                faces_list = (reindex_faces(part.faces, current_offset))
+                #current_offset += len(part.vertices)
+                mesh.vertices = o3d.utility.Vector3dVector(vertex_list)
+                mesh.triangles = o3d.utility.Vector3iVector(faces_list)
+                mesh.compute_vertex_normals()
+                mesh.paint_uniform_color(part.colour)
+                full = full + mesh
+                #mesh = None
+                mesh = o3d.geometry.TriangleMesh()
+            else:
+                vertex_list = (np.asarray(part.vertices, dtype=np.float64))
+                pcd.points = o3d.utility.Vector3dVector(np.asarray(vertex_list))
+                pcd.estimate_normals()
+                pcd.paint_uniform_color(part.colour)
+                full = full + pcd
+                #pcd = None
+                pcd = o3d.geometry.PointCloud()
+                
+    #o3d.io.write_point_cloud("final.pcd", full)
+    o3d.visualization.draw_geometries([full])

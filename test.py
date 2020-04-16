@@ -12,6 +12,7 @@ from grassdata_new import Part, Mesh, PartLabel, GRASSNewDataset
 from aggregator import Aggregator
 from mixer import Mixer
 from extractor import RandomizedExtractor
+from warp import renderMeshFromParts_new
 
 def vrrotvec2mat(rotvector):
     s = math.sin(rotvector[3])
@@ -246,13 +247,18 @@ def get_geo_tree(root):
 if __name__ == "__main__":
     # dataset = GRASSNewDataset('D:\\CMPT 764\\chairs_dataset',3)
     agg = Aggregator()
-    mixer = Mixer('Chair', 5)
+    #mixer = Mixer('Chair', 5, ['172', '182', '178', '517', '197'])
+    #mixer = Mixer('Chair', 5, ['172', '173', '182', '178', '686'])
+    mixer = Mixer('Chair', 5, ['178', '348', '456', '504', '518'])
+    #mixer.show_data_meshes()
+    
     # extractor = RandomizedExtractor(dataset)
 
     for i in range(5):
         mixer.reset_target()
+        mixer.show_data_meshes()
         mixer.mix_parts()
-        renderMeshFromParts(mixer.get_target_mesh().parts)
+        renderMeshFromParts_new(mixer.get_target_mesh().parts)
         
         
     # for i in range(len(mixer.dataset)):

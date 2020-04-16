@@ -1,5 +1,7 @@
-from grassdata_new import Part, Mesh, PartLabel, GRASSNewDataset
+from grassdata_new import Part, Mesh
+from grassdata_new import PartLabel, GRASSNewDataset
 from extractor import RandomizedExtractor
+from draw3dobb import renderMeshFromParts
 
 import numpy as np
 import random
@@ -7,7 +9,7 @@ import copy
 import open3d as o3d
 
 from utils import restore_vertex_order
-from warp import warp_part, get_mesh_from_part, pcd_to_part, convert_to_pcd
+from warp import warp_part, get_mesh_from_part, pcd_to_part, convert_to_pcd, move_part, renderMeshFromParts_new
 
 class Mixer(object):
 	def __init__(self, dataset_path, model_num, model_list=None):
@@ -127,7 +129,7 @@ class Mixer(object):
 
 		self.extractor.replace_target_parts_by_label(label, warped_parts)	
 
-	def replace_parts(self, source_parts, source_bbox, target_bbox, label):
+	def replace_part(self, source_parts, source_bbox, target_bbox, label):
 		source_center = (source_bbox[0] + source_bbox[1]) / 2
 		target_center = (target_bbox[0] + target_bbox[1]) / 2
 
@@ -182,12 +184,35 @@ class Mixer(object):
 
 	def mix_parts(self):
 		target_bboxes_dict = self.extractor.get_target_labels_with_bounding_box()
+		#renderMeshFromParts(self.extractor.target.parts)
 
 		i = 0
+		print("Entering mix parts")
 		for label in target_bboxes_dict:
 		# label = PartLabel.BACK
 			parts, bbox = self.extractor.find_source_part(self.dataset, label)
 			if bbox is None:
+				#'''
+				target_parts = self.extractor.get_target_parts_by_label(label)
+				for part in target_parts:
+					bb = part.bounding_box
+					col = part.colour
+					idx = target_parts.index(part)
+					m = get_mesh_from_part(part)
+					pcd = convert_to_pcd(m)
+                    
+					#o3d.io.write_point_cloud("part"+str(i)+".pcd", pcd)
+					o3d.visualization.draw_geometries([pcd], 'TARGET PART')
+					print(i)
+					i = i+1
+                    
+					result = pcd_to_part(pcd, label, bb)
+					result.colour = col
+					print("target ", result.colour)
+					target_parts[idx] = result
+					print("Target part taken (as no replacement was found)!")
+				self.extractor.replace_target_parts_by_label(label, target_parts)
+				#'''
 				continue
 			
 			source_bbox = [bbox[0, :], bbox[-1, :]]
@@ -197,16 +222,20 @@ class Mixer(object):
 			if len(parts) == target_bboxes_dict[label][0]:
 				target_parts = self.extractor.get_target_parts_by_label(label)
 				for s, t, bb in zip(parts, target_parts, bbox):
+					col = s.colour
 					idx = parts.index(s)
 					s = get_mesh_from_part(s)
 					t = get_mesh_from_part(t)
 					result = warp_part(s, t)
                     
-					# o3d.io.write_point_cloud("part"+str(i)+".pcd", result)
-					# print(i)
-					# i = i+1
+					#o3d.io.write_point_cloud("part"+str(i)+".pcd", result)
+					o3d.visualization.draw_geometries([result], 'WARPED PART')
+					print(i)
+					i = i+1
 					
 					result = pcd_to_part(result, label, bb) #bbox
+					result.colour = col
+					print("warp ", result.colour)
 					target_parts[idx] = result
 					print("Warped a part!")
 					
@@ -214,8 +243,10 @@ class Mixer(object):
 					# Example on how to use move _part: 
                     # result = move_part(result, seat, axis=1, n=5000)
                 
-                # self.extractor.replace_target_parts_by_label(label, target_parts)
-                if label == PartLabel.LEG or label == PartLabel.BACK or label == PartLabel.ARMREST:
+                # 
+				#self.extractor.replace_target_parts_by_label(label, target_parts)
+				#'''
+				if label == PartLabel.LEG or label == PartLabel.BACK or label == PartLabel.ARMREST:  
 					orig_target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]] ## min coords, max coords
 					seat_bbox = [target_bboxes_dict[PartLabel.SEAT][1][0, :], target_bboxes_dict[PartLabel.SEAT][1][-1, :]] ## min coords, max coords
 					mod_target_bbox, target_corners = self.__adjust_bbox(orig_target_bbox, seat_bbox)
@@ -225,21 +256,27 @@ class Mixer(object):
 
 				else:
 					self.extractor.replace_target_parts_by_label(label, target_parts)
+				#'''
                 
 			# Else replace using bbox, but convert part to mesh to pcd part
 			else:
-				# for part, bb in zip(parts, bbox):
-				# 	idx = parts.index(part)
-				# 	m = get_mesh_from_part(part)
-				# 	pcd = convert_to_pcd(m)
+				#continue
+				for part, bb in zip(parts, bbox):
+					col = part.colour
+					idx = parts.index(part)
+					m = get_mesh_from_part(part)
+					pcd = convert_to_pcd(m)
                     
-				# 	o3d.io.write_point_cloud("part"+str(i)+".pcd", pcd)
-				# 	print(i)
-				# 	i = i+1
+					#o3d.io.write_point_cloud("part"+str(i)+".pcd", pcd)
+					o3d.visualization.draw_geometries([pcd], 'REPLACED PART')
+					print(i)
+					i = i+1
                     
-				# 	result = pcd_to_part(pcd, label, bb)
-				# 	parts[idx] = result
-				# 	print("Replaced a part!")
+					result = pcd_to_part(pcd, label, bb)
+					result.colour = col
+					print("replace ", result.colour)
+					parts[idx] = result
+					print("Replaced a part!")
 			## readjusting bbox to adjacent part
 			#'''
 
@@ -250,22 +287,33 @@ class Mixer(object):
 					target_bbox, target_corners = self.__adjust_bbox(orig_target_bbox, seat_bbox)
 					target_bboxes_dict[label][1] = target_corners
 					
-					self.replace_parts(parts, source_bbox, target_bbox, label)
+					self.replace_part(parts, source_bbox, target_bbox, label)
 
 				elif label == PartLabel.ARMREST:
 					if random.random() > 0.5: ##delete armrests
 						self.extractor.make_target_parts_invisible_by_label(label)
 					else:
-						self.replace_parts(parts, source_bbox, [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]], label)	
+						self.replace_part(parts, source_bbox, [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]], label)	
 
 				else:
 					target_bbox = [target_bboxes_dict[label][1][0, :], target_bboxes_dict[label][1][-1, :]]
-					self.replace_parts(parts, source_bbox, target_bbox, label)
+					self.replace_part(parts, source_bbox, target_bbox, label)
 
-			self.join_parts()
+			#self.join_parts()
 
 	def get_target_mesh(self):
 		return self.extractor.target
 
 	def reset_target(self):
 		self.extractor.reset_target(self.dataset)
+        
+	def show_data_meshes(self):
+        # To see all the source meshes
+        # And the target in red
+		#print(self.extractor.target.colour)
+		meshes = self.extractor.get_source_meshes()
+		print(len(meshes))
+		renderMeshFromParts(self.extractor.target.parts)
+		
+		for i in range (len(meshes)):
+			renderMeshFromParts(meshes[i].parts)

@@ -23,6 +23,7 @@ class Part(object):
         self.connectivity = []
         self.bounding_box = bounding_box
         self.render = True
+        self.colour = [0.2, 0.2, 0.25] # Default colour for all meshes is grey
 
     def __str__(self):
         return 'Part of type {} has {} connections,v: {} f: {}'.format(self.label, len(self.connectivity), len(self.vertices), len(self.faces))
@@ -49,6 +50,9 @@ class Mesh(object):
         for connection in connectivity:
             (start, end) = connection
             self.parts[start].connectivity.append(self.parts[end])
+            
+        self.colour = [0.2, 0.2, 0.25] # Default colour for all meshes is grey
+        self.set_mesh_and_parts_colour([0.2, 0.2, 0.25])
 
     def __str__(self):
         return 'Mesh has {} parts, obb file: {} obj file: {}'.format(len(self.parts), self.original_file, self.original_model)
@@ -59,6 +63,11 @@ class Mesh(object):
             if part.label == label:
                 result.append(part)
         return result
+
+    def set_mesh_and_parts_colour(self, col):
+        self.colour = col
+        for part in self.parts:
+            part.colour=col
   
 class GRASSNewDataset(data.Dataset,):
     """Dataset of PartNet meshes with symmetry"""
