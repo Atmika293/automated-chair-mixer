@@ -8,6 +8,7 @@ import math
 #from pclpy import pcl
 import time
 from grassdata_new import Part, PartLabel
+from views import view
 from draw3dobb import reindex_faces
 
 def renderMeshFromParts_new(parts, i):
@@ -55,7 +56,8 @@ def renderMeshFromParts_new(parts, i):
         
 
     o3d.io.write_point_cloud("final"+str(i)+".ply", full)
-    o3d.visualization.draw_geometries([full])
+    #o3d.visualization.draw_geometries([full])
+    view(full, "final"+str(i)+".png")
 
 
 def move_part(mesh, target, axis=1, n=1000, dir='down'):

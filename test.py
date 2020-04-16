@@ -249,14 +249,19 @@ if __name__ == "__main__":
     agg = Aggregator()
     #mixer = Mixer('Chair', 5, ['172', '182', '178', '517', '197'])
     #mixer = Mixer('Chair', 5, ['172', '173', '182', '178', '686'])
-    mixer = Mixer('Chair', 5, ['178', '348', '456', '504', '518'])
+    #mixer = Mixer('Chair', 5, ['178', '348', '456', '504', '518'])
+    
+    #test_models: A = [197, 41103, 37574], B = [45075, 40015, 39696, 37658, 36193], C = [309, 1325, 3244, 36881, 37614, 40403, 42663, 37989, 3223, 41656]
+    #mixer = Mixer('Chair', 3, ['197', '41103', '37574'])
+    mixer = Mixer('Chair', 5, ['45075', '40015', '39696', '37658', '36193'])
+    #mixer = Mixer('Chair', 10, ['309', '1325', '3244', '36881', '37614', '40403', '42663', '37989', '3223', '41656'])
     #mixer.show_data_meshes()
     
     # extractor = RandomizedExtractor(dataset)
 
-    for i in range(1):
+    for i in range(10):
         mixer.reset_target()
-        mixer.show_data_meshes()
+        mixer.show_data_meshes(i)
         mixer.mix_parts()
         renderMeshFromParts_new(mixer.get_target_mesh().parts, i)
         

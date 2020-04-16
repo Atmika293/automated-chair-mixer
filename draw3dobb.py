@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.proj3d import proj_transform
 from matplotlib.text import Annotation
 from grassdata import Tree
-
+from views import view
 import open3d as o3d
 
 #https://datascience.stackexchange.com/questions/11430/how-to-annotate-labels-in-a-3d-matplotlib-scatter-plot
@@ -250,7 +250,7 @@ def renderMeshFromParts(parts):
     #o3d.io.write_point_cloud("final.pcd", mesh)
     o3d.visualization.draw_geometries([mesh])
 '''
-def renderMeshFromParts(parts):
+def renderMeshFromParts(parts, filename = 'screenshot.png'):
     vertex_list = []
     faces_list = []
     current_offset = 0
@@ -284,4 +284,6 @@ def renderMeshFromParts(parts):
                 pcd = o3d.geometry.PointCloud()
                 
     #o3d.io.write_point_cloud("final.pcd", full)
-    o3d.visualization.draw_geometries([full])
+    #o3d.visualization.draw_geometries([full])
+    view(full, filename)
+    

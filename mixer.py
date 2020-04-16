@@ -307,13 +307,13 @@ class Mixer(object):
 	def reset_target(self):
 		self.extractor.reset_target(self.dataset)
         
-	def show_data_meshes(self):
+	def show_data_meshes(self, run=9999):
         # To see all the source meshes
         # And the target in red
 		#print(self.extractor.target.colour)
 		meshes = self.extractor.get_source_meshes()
 		print(len(meshes))
-		renderMeshFromParts(self.extractor.target.parts)
+		renderMeshFromParts(self.extractor.target.parts, 'target'+str(run)+'.png')
 		
 		for i in range (len(meshes)):
-			renderMeshFromParts(meshes[i].parts)
+			renderMeshFromParts(meshes[i].parts, 'source'+str(run)+'_'+str(i)+'.png')
