@@ -39,9 +39,9 @@ if __name__ == "__main__":
     
     # 1 for resnet
     # 2 for lenet
-    type_of_model = 1
-    models = [3,4,8,9,10]
-    folder = 'SETB/SETB_Final/'
+    type_of_model = 2
+    models = [6,14]#[2,5,7,8,9]
+    folder = 'SETC/SETC_Final/'
     
     # Change the addresses and the values for i
     for i in models:
@@ -137,7 +137,7 @@ if __name__ == "__main__":
             R[0,2] = math.sin(rad)
             R[2,0] = -R[0,2]
             l.rotate(R)
-            view(l, folder+'leftside'+str(i)+'.png', type_of_model)
+            view(l, folder+'leftside'+str(i)+'.png')
             
                    
             # TOP RIGHT
