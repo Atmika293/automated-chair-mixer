@@ -30,6 +30,7 @@ PointNet can make a better distinction in plausibility of the generated chairs. 
 
 # References
 - Probreg
+
 @software{probreg,
     author = {{Kenta-Tanaka et al.}},
     title = {probreg},
@@ -37,7 +38,9 @@ PointNet can make a better distinction in plausibility of the generated chairs. 
     version = {0.1.6},
     date = {2019-9-29},
 }
+
 - PartNet-SymH
+
 @InProceedings{Yu_2019_CVPR,
     title = {{PartNet}: A Recursive Part Decomposition Network for Fine-grained and Hierarchical Shape Segmentation},
     author = {Fenggen Yu and Kun Liu and Yan Zhang and Chenyang Zhu and Kai Xu},
@@ -46,6 +49,7 @@ PointNet can make a better distinction in plausibility of the generated chairs. 
     month = {June},
     year = {2019}
 }
+
 @InProceedings{Mo_2019_CVPR,
     author = {Mo, Kaichun and Zhu, Shilin and Chang, Angel X. and Yi, Li and Tripathi, Subarna and Guibas, Leonidas J. and Su, Hao},
     title = {{PartNet}: A Large-Scale Benchmark for Fine-Grained and Hierarchical Part-Level {3D} Object Understanding},
