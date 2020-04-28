@@ -24,6 +24,7 @@ For the plausibility scorer, we trained 3 different neural networks:
 - LeNet
 - ResNet
 - PointNet
+
 LeNet is unable to clearly distinguish between a plausible chair and chairs with missing or unusually deformed parts (“bad” chairs). Both types of chairs are given high plausibility scores.
 ResNet scores “bad” chairs low, but does not give a much higher score to plausible chairs.
 PointNet can make a better distinction in plausibility of the generated chairs. Plausible chairs are given a high score, while “bad” chairs are given low scores. 
