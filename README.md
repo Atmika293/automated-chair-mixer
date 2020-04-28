@@ -1,6 +1,4 @@
 # Automated Part Mix-n-Match of Chair 3D Models
-
-# Summary
 This system randomly mixes and deforms the parts of given chair models from the PartNet-SymH dataset, producing a brand new and unique chair, which is then evaluated to show how “good” or “bad” the chair is. The chairs are mixed and based on necessity deformed using Coherent Point Drift algorithm, before being sequentially attached back together. The new chair is then evaluated using a LeNet based scorer, a ResNet34 based scorer and a PointNet based scorer.
 
 # Modules
@@ -16,6 +14,10 @@ Each chair part in the target is either -
 - A transformed target part, in case no match is found in the dataset (example an armrest)
 
 To implement CPD for part deformation we used the library Probreg (probablistic point cloud registration library), which uses Open3D as an interface and implements various kinds of point cloud registration algorithms, of both rigid and non rigid kind. 
+
+
+![alt text](https://github.com/Atmika293/gm-project/blob/master/full_result.png)
+A pictorial represntation of mixing methodology
 
 ## Plausibility Scorer
 For the plausibility scorer, we trained 3 different neural networks:
