@@ -30,7 +30,7 @@ PointNet can make a better distinction in plausibility of the generated chairs. 
 
 # References
 - Probreg
-
+'''
 @software{probreg,
     author = {{Kenta-Tanaka et al.}},
     title = {probreg},
@@ -38,6 +38,7 @@ PointNet can make a better distinction in plausibility of the generated chairs. 
     version = {0.1.6},
     date = {2019-9-29},
 }
+'''
 
 - PartNet-SymH
 
